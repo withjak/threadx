@@ -142,26 +142,26 @@ thread([data, data],
 ### x
 `x` is Special, I mean literally.
 ```python
-x = Special()
+x = _Special()
 ```
 `thread` finds it in arguments list and replaces it with return value from previous step.
 
 ### *x
 `*x` is a function
 ```python
-(*x, ) == (unpack_args, )
+(*x, ) == (_unpack_args, )
 ```
 If `thread` function sees it in argument list, it replaces it with, result (unpacked) of previous step.
 
 ### x[...]
-- `x[...]` retuns a object of class `KeyChain`. 
+- `x[...]` retuns a object of class `_KeyChain`. 
 - This object remembers the key names that appear in brackets.
 
 ```python
 data = [['a', 'b'], 'k']
 
 # This happens
-KeyChain()[0][1](data) # => 'b'
+_KeyChain()[0][1](data) # => 'b'
 
 # You wite is as
 thread(data, 
@@ -173,7 +173,7 @@ thread(data,
 
 # or you can write it as
 thread(data, 
-       KeyChain()[0][1])
+       _KeyChain()[0][1])
 
 ```
 
@@ -181,16 +181,16 @@ thread(data,
 
 ```python
 data = ['a', 'b']
-capture_attr('index')(data, 'a')  # => 0
+_capture_attr('index')(data, 'a')  # => 0
 
 thread(data, 
        (x.index, 'a'))
 
 thread(data, 
-       (capture_attr('index'), 'a'))
+       (_capture_attr('index'), 'a'))
 
 thread(data, 
-       (capture_attr('index'), x, 'a'))
+       (_capture_attr('index'), x, 'a'))
 ```
 
 

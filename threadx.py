@@ -11,13 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def unpack_args():
+def _unpack_args():
+    """Used as a symbol for comparision"""
     pass
 
 def stop(): 
+    """Used as a symbol for comparision"""
     pass
 
-def capture_attr(name):
+def _capture_attr(name):
+    """Remebers `name`, which is supposed to be a attribute/method name of `obj`.
+    Later it
+    - returns the attributre value
+    - or calls the method
+    """
     def call_me(obj, *args):
         thing = getattr(obj, name)
         if callable(thing):
@@ -27,7 +34,12 @@ def capture_attr(name):
             return thing
     return call_me
 
-class KeyChain:
+class _KeyChain:
+    """Usage:
+    data = [['a', 'b'], 1]
+    
+    KeyChain()[0][1](data) # => 'b'
+    """
     def __init__(self):
         self.key_names = []
     
@@ -41,25 +53,32 @@ class KeyChain:
             obj = obj[name]
         return obj
 
-class Special:
+class _Special:
     "I do not say no to anything."
     def __iter__(self):
-        return iter([unpack_args])
+        return iter([_unpack_args])
 
     def __getitem__(self, name):
-        return KeyChain()[name]
+        return _KeyChain()[name]
         
     def __getattribute__(self, name):
-        return capture_attr(name)
+        return _capture_attr(name)
     
     def __repr__(self):
-        return 'Special()'
+        return '_Special()'
 
-x = Special()
+x = _Special()
 
-def handle_f(f, prev, args):
+def _call_f(f, prev, args):
+    """
+    Builds up arguments list by subtituting:
+    - `unpack_args` with *prev, or
+    - `x` with `prev`.
+
+    Calls function `f` with these new arguments.
+    """
     try:
-        i = args.index(unpack_args)
+        i = args.index(_unpack_args)
     except ValueError:
         pass
     else:
@@ -72,18 +91,26 @@ def handle_f(f, prev, args):
     else:
         return f(*args[:i], prev, *args[i+1:])    
 
-def thread(prev, *tuples):
-    for t in tuples:
-        if not isinstance(t, tuple):
-            t = (t, )
+def thread(data, *pipeline):
+    """Does Threading/Chaining of functions. Passes output of one a function to the next function.
+    Ex.
+    thread(10, 
+           (range, 0, x, 2), 
+           sum)
+    Check tests for all possible options.
+    """
+    prev = data
+    for step in pipeline:
+        if not isinstance(step, tuple):
+            step = (step, )
             
-        f, *rest = t
+        f, *rest = step
         if f == stop:
             return prev
         elif f == x:
             raise ValueError(f'x cannot be the first thing.')
         elif callable(f):
-            prev = handle_f(f, prev, rest)
+            prev = _call_f(f, prev, rest)
         else:
             raise TypeError(f'First thing in tuple needs to be a callable. Got {type(f)}:{f}')
     return prev
