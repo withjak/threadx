@@ -22,11 +22,6 @@ def capture_attr(name):
             return thing
     return call_me
 
-def capture_key(name):
-    def call_me(obj, *args):
-        return obj[name]
-    return call_me
-
 class Key_chain:
     def __init__(self):
         self.key_names = []
