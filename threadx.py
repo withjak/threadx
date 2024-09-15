@@ -27,7 +27,7 @@ def capture_attr(name):
             return thing
     return call_me
 
-class Key_chain:
+class KeyChain:
     def __init__(self):
         self.key_names = []
     
@@ -47,7 +47,7 @@ class Special:
         return iter([unpack_args])
 
     def __getitem__(self, name):
-        return Key_chain()[name]
+        return KeyChain()[name]
         
     def __getattribute__(self, name):
         return capture_attr(name)
