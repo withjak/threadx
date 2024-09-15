@@ -1,6 +1,4 @@
 from threadx import thread, x, stop
-from functools import reduce
-import operator as op
 import pytest
 
 """
