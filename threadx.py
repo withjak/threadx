@@ -1,16 +1,21 @@
+# Copyright 2024 Akshay Patel
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 def unpack_args():
     pass
 
 def stop(): 
     pass
-
-# Not implementing unpack_kwargs i.e (..., **x, ...) because, 
-# In a tuple (1, **{'a', 1}) is an invalid syntax.
-# its valid syntax only in a function call. print("something", **{'end': '\n\n'})
-# also you cant do somefn("something", **{'end': "abc"}, "hello"), as positional arguments cannot come after keyword arguments
-
-# Instead something like below can be implemented
-# (..., *_x, ...) but then you have 2 different symbols: x and _x. Which i dont want to do
 
 def capture_attr(name):
     def call_me(obj, *args):
