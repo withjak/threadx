@@ -81,9 +81,9 @@ def thread(prev, *tuples):
         if f == stop:
             return prev
         elif f == x:
-            raise Exception(f'x cannot be the first thing in the tuple. Got {t!r}')
+            raise ValueError(f'x cannot be the first thing.')
         elif callable(f):
             prev = handle_f(f, prev, rest)
         else:
-            raise Exception(f'First thing in tuple needs to be a callable. Got {type(f)}:{f}')
+            raise TypeError(f'First thing in tuple needs to be a callable. Got {type(f)}:{f}')
     return prev
