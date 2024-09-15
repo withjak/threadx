@@ -4,17 +4,22 @@
 # Table of Contents
 - [Install](#Install)
 - [Motivation](#Add-dependency)
-- [Features](#Features)
 - [Usage](#Usage)
+    - [Pass result as first argument](#Pass-argument-implicitly)
+    - [Pass x as nth argument](#Pass-argument-explicitly)
+    - [Unpacking arguments](#Unpacking-arguments)
+    - [Rules for First thing](#Rules-for-First-thing)
+    - [Method call](#Method-call)
+    - [Attribute lookup](#Attribute-lookup)
+    - [Key access and slicing](#Key-access-and-slicing)
+    - [Debugging](#Debugging)
+    - [Fewer lambdas](#Fewer-lambdas)
 - [Inner working](#Inner-working)
 
 ## Install 
 TODO
 
 ## Motivation
-TODO
-
-## Features 
 TODO
 
 ## Usage
@@ -24,7 +29,7 @@ TODO
 from threadx import thread, x, stop
 ```
 
-### Pass argument implicitly
+### Pass result as first argument
 Passed result (i.e. `x`) of last step as first argument.
 ```python
 thread([1, 2, 3],  # => [1, 2, 3]
@@ -39,7 +44,7 @@ thread([1, 2, 3],
        (str, x))
 ```
 
-### Pass argument explicitly
+### Pass x as nth argument
 Pass `x` as nth argument <br>
 `x` if present it the arguments, then it wont be passed as the first argument implicitly.
 ```python
@@ -58,7 +63,7 @@ thread(3,
        list)               # => [10, 13, 16, 19]
 ```
 
-### Argument unpacking 
+### Unpacking arguments 
 ```python 
 # unpacking works as usual
 thread([10, 20], 
@@ -119,7 +124,7 @@ thread({'a': {'b': [1, 2]}},
 
 ```
 
-### Fewer lambda
+### Fewer lambdas
 ```python 
 data = {'a': {'b': [10, 12]}}
 
@@ -177,6 +182,7 @@ thread(data,
 
 ```
 
+### x.thing
 `x.thing` works similar to `x[...]`, but instead of being an object, it is just a function with a closure on the name "thing".
 
 ```python
