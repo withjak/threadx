@@ -38,7 +38,7 @@ class _KeyChain:
     """Usage:
     data = [['a', 'b'], 1]
     
-    KeyChain()[0][1](data) # => 'b'
+    _KeyChain()[0][1](data) # => 'b'
     """
     def __init__(self):
         self.key_names = []
@@ -53,7 +53,7 @@ class _KeyChain:
             obj = obj[name]
         return obj
 
-class _Special:
+class _X:
     "I do not say no to anything."
     def __iter__(self):
         return iter([_unpack_args])
@@ -67,7 +67,7 @@ class _Special:
     def __repr__(self):
         return '_Special()'
 
-x = _Special()
+x = _X()
 
 def _call_f(f, prev, args):
     """
@@ -109,8 +109,13 @@ def thread(data, *pipeline):
             return prev
         elif f == x:
             raise ValueError(f'x cannot be the first thing.')
+        elif f == _unpack_args:
+            raise ValueError(f'*x cannot be the first thing.')
         elif callable(f):
             prev = _call_f(f, prev, rest)
         else:
             raise TypeError(f'First thing in tuple needs to be a callable. Got {type(f)}:{f}')
     return prev
+
+
+

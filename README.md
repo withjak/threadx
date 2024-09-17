@@ -8,13 +8,14 @@
     - [Pass result as first argument](#Pass-result-as-first-argument)
     - [Pass x as nth argument](#Pass-x-as-nth-argument)
     - [Unpacking arguments](#Unpacking-arguments)
-    - [Rules for First thing](#Rules-for-First-thing)
+    - [Rule for the First thing](#Rule-for-the-First-thing)
     - [Method call](#Method-call)
     - [Attribute lookup](#Attribute-lookup)
     - [Key access and slicing](#Key-access-and-slicing)
     - [Debugging](#Debugging)
     - [Fewer lambdas](#Fewer-lambdas)
 - [Inner working](#Inner-working)
+- [TODO](#TODO)
 
 ## Install 
 TODO
@@ -30,7 +31,7 @@ from threadx import thread, x, stop
 ```
 
 ### Pass result as first argument
-Passed result (i.e. `x`) of last step as first argument.
+Pass result (i.e. `x`) of previous step as first argument.
 ```python
 thread([1, 2, 3],  # => [1, 2, 3]
        sum,        # => 6
@@ -45,8 +46,7 @@ thread([1, 2, 3],
 ```
 
 ### Pass x as nth argument
-Pass `x` as nth argument <br>
-`x` if present it the arguments, then it wont be passed as the first argument implicitly.
+`x` if present it the arguments, then it won't be passed as the first argument implicitly.
 ```python
 thread(10, 
        (range, x, 20, 3),  # same as (range, 20, 3)
@@ -64,19 +64,26 @@ thread(3,
 ```
 
 ### Unpacking arguments 
+
+Unpacking works as usual
+
 ```python 
-# unpacking works as usual
 thread([10, 20], 
        (range, *x, 3),     # unpack to (range, 10, 20, 3)
        list)               # => [10, 13, 16, 19]
 ```
 
-### Rules for First thing
-- First thing needs to be callable. As can be seen in above examples `sum` `str` `range` `list`.
-- You cannot pass `x` as the first thing.
+### Rule for the First thing
+`thread` function:
+- signature `thread(data, *pipeline)`
+  - pipeline is a sequence of steps
+  - each step can be:
+       - a tuple like `(function, arg_1, arg_2, ...)`.
+       - or, just a `function` in case if it only takes one argument.
+  - `thread` calls the function in each step with appropiate arguments (including the result from previous step)
 
-Their voilation will throw `TypeError` and `ValueError` respectively.
-<br>
+So, the first thing i.e. the function in each step, well it does not need be a function. But it needs to be a `callable`.
+- `TypeError` will be thrown if its not a callable.
 
 ### Method call
 - `x` is whatever was returned from evaluation of previous step.
@@ -125,31 +132,31 @@ thread({'a': {'b': [1, 2]}},
 ```
 
 ### Fewer lambdas
+Below code demonstrates how we can get rid of `lambda` in the **simplest case** where there is only one iterable provided to the map function.
 ```python 
 data = {'a': {'b': [10, 12]}}
 
 # lambdas
 thread([data, data], 
-       (map, lambda i: i['a']['b'], x), 
-       list)                                # => [[10, 12], [10, 12]]
+       (map, lambda i: i['a']['b'][0], x), 
+       list)                                # => [10, 10]
 
-# See `Inner working` to undestand whats happening
-# For now think of it like:
-# last `x` is the output from previous step, i.e. [data1, data2]
-# `x` in x[...][...] assumes the value of data1 and then data2.
 thread([data, data], 
-       (map, x['a']['b'], x), 
-       list)                                # => [[10, 12], [10, 12]]
+       (map, x['a']['b'][0], x), 
+       list)                                # => [10, 10]
 
 ```
+What just happened?
+- last `x` is the output from previous step, i.e. [data1, data2]
+- "x" in `x[...][...]` assumes the value of data1 and then data2.
+See `Inner working` to undestand whats happening
 
 ## Inner working
 ### x
-`x` is Special, I mean literally.
+`thread` sees `x` in arguments list and replaces it with return value from previous step. 
 ```python
-x = _Special()
+x = _X()
 ```
-`thread` finds it in arguments list and replaces it with return value from previous step.
 
 ### *x
 `*x` is a function
@@ -199,8 +206,10 @@ thread(data,
        (_capture_attr('index'), x, 'a'))
 ```
 
-
-
-
-
-
+## TODO
+- Complete readme.
+- Few exmaple showing best written python code and then comparing it with threadx implementation, for:
+ - redability
+ - performance impact
+- Benchmarking code for performance both time and memory (if possible).
+- Publish it on pypi
