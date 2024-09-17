@@ -1,7 +1,10 @@
-**threadx** brings the elegance of Clojure's threading macros to Python, making your code cleaner, more readable, and functional. With threadx, you can seamlessly chain operations while avoiding deeply nested function calls. The library revolves around two powerful components:
-- thread: A function that threads values through a series of operations, passing the result from one step as the input to the next.
-- x: A placeholder object that represents where the output of the previous step should be placed. It supports method calls, item lookups, and unpacking, allowing for intuitive expressions.
+**threadx** - Create elegant data transformation pipelines.
+It brings the elegance of Clojure's threading macros to Python. 
+It lets you thread values through a sequence of operations with a sense of clarity and simplicity that feels natural. And it all revolves around two key elements:
+- **thread**: Passes the result of each step as the input to the next.
+- **x**: A smart placeholder that knows exactly where to inject the previous result, whether in a method call, item lookup, or even unpacking.
 
+Here’s what it looks like in action:
 ```python
 from threadx import thread, x
 
@@ -12,14 +15,21 @@ thread('./data.log',
        (map, json.loads, x), 
        (map, x['time'], x), 
        sum)
-
-# ./data.log file looks somthing like:
-# {"time": 12000, "fn": "foo", ...},\n {"time": 12000, "fn": "foo", ...}
 ```
-**Advantages of threadx**:
-- Conciseness: The entire pipeline is expressed in a linear, easy-to-read format without the need for explicit intermediate variables.
-- Readability: It's clear how the data flows through each step because each transformation is applied directly to the output of the previous step.
-- Clarity: The use of x simplifies operations like method calls (x.splitlines), function mapping ((map, x.strip, x)), and accessing items (x['time']).
+
+What’s happening here? The file content is being read, split, stripped, converted to JSON, and the execution-time summed—all in a linear and readable way. No intermediary variables, no nesting, just the data flowing from one step to the next. <br>
+
+
+*data.log* might look like:
+```json
+{"time": 12000, "fn": "foo", ...}
+{"time": 12345, "fn": "bar", ...}
+```
+
+What Makes threadx Interesting?
+- **Readable Flow**: Instead of diving into layers of nested calls, you write each transformation as a clear, sequential step. 
+- **The `x` Factor**: `x` acts as a placeholder for where the output of the previous step goes. It’s surprisingly flexible, supporting method calls, attribute/item lookups, and more.
+- **No Extra Variables**: Avoid the noise of intermediate variables or lambda functions. Your transformations stay clean and minimal.
 
 # Table of Contents
 - [Install](#Install)
@@ -30,10 +40,10 @@ thread('./data.log',
     - [Rule for the First thing](#Rule-for-the-First-thing)
     - [Method call](#Method-call)
     - [Attribute lookup](#Attribute-lookup)
-    - [Key access and slicing](#Key-access-and-slicing)
+    - [Getting Item And Slicing](#Getting-Item-And-Slicing)
     - [Debugging](#Debugging)
     - [Fewer lambdas](#Fewer-lambdas)
-- [Inner working](#Inner-working)
+    - [Build data transformation pipeline](#Build-data-transformation-pipeline)
 - [TODO](#TODO)
 
 ## Install 
@@ -47,33 +57,31 @@ from threadx import thread, x, stop
 ```
 
 ### Pass result as first argument
-Pass result (i.e. `x`) of previous step as first argument.
+`thread` allows you to pass the result of the previous step automatically as the first argument in each new function:
 ```python
 thread([1, 2, 3],  # => [1, 2, 3]
        sum,        # => 6
        str)        # => '6'
+```
 
-# x represents the result of previous step.
-# x is implictly passed as first argument in each step
-# identical to above code
+Or, be explicit about it:
+```python
 thread([1, 2, 3],
        (sum, x),
        (str, x))
 ```
 
 ### Pass x as nth argument
-`x` if present it the arguments, then it won't be passed as the first argument implicitly.
+Want to pass the result into a different argument position? No problem:
 ```python
 thread(10, 
        (range, x, 20, 3),  # same as (range, 20, 3)
        list)               # => [10, 13, 16, 19]
 
-# passed as second argument 
 thread(20, 
        (range, 10, x, 3),
        list)               # => [10, 13, 16, 19]
 
-# passed as third argument
 thread(3, 
        (range, 10, 20, x),
        list)               # => [10, 13, 16, 19]
@@ -89,34 +97,18 @@ thread([10, 20],
        list)               # => [10, 13, 16, 19]
 ```
 
-### Rule for the First thing
-`thread` function:
-- signature `thread(data, *pipeline)`
-  - pipeline is a sequence of steps
-  - each step can be:
-       - a tuple like `(function, arg_1, arg_2, ...)`.
-       - or, just a `function` in case if it only takes one argument.
-  - `thread` calls the function in each step with appropiate arguments (including the result from previous step)
-
-So, the first thing i.e. the function in each step, well it does not need be a function. But it needs to be a `callable`.
-- `TypeError` will be thrown if its not a callable.
-
 ### Method call
-- `x` is whatever was returned from evaluation of previous step.
-- So naturally you can do all the things with it that you would do with them.
-
+Use `x.method_name` for method calls, just like magic.
 ```python
 thread(['a', 'b'], 
        (x.index, 'a'))      # => 0
-# l = ['a', 'b']
-# l.index('b')
 
 thread(['a', 'b'], 
        (x.count, 'b'))      # => 1
 ```
 
 ### Attribute lookup
-Lookup class and instance attributes.
+Use `x.attribute_name` to lookup class and instance attributes. 
 ```python 
 thread({'a': 1, 'b': 2},
        x.keys, 
@@ -124,108 +116,65 @@ thread({'a': 1, 'b': 2},
 
 ```
 
-### Key access and slicing
+### Getting Item And Slicing
 ```python
-thread({'a': {'b': [1, 2]}}, 
+data = {'a': {'b': [1, 2, 3, 4]}}
+
+thread(data, 
        x['a'], 
        x['b'][0])                   # => 1
 
-thread({'a': {'b': [1, 2, 3, 4]}}, 
+thread(data, 
        x['a']['b'][:2])             # => [1, 2]
 
 ```
 
 ### Debugging 
-Place `stop` to retun the result of previous step. Usefull for debugging.
+Easily inspect intermediate results using `stop`. Usefull for debugging.
 ```python
-thread({'a': {'b': [1, 2]}}, 
+thread(data, 
        x['a'], 
        x['b'], 
-       stop,                    # => [1, 2]
-       sum,                     # this wont be executed
-       str)                     # this wont either
+       stop,                    # => [1, 2, 3, 4], Stop and return for inspection
+       sum,                     # This won’t be executed
+       str)
 
 ```
 
 ### Fewer lambdas
-Below code demonstrates how we can get rid of `lambda` in the **simplest case** where there is only one iterable provided to the map function.
+Remove verbose lambdas in the **simple case** where there is only one iterable provided to the `map`/`filter`/`reduce` or any other similar function.
 ```python 
-data = {'a': {'b': [10, 12]}}
-
-# lambdas
+# Normal way:
 thread([data, data], 
        (map, lambda i: i['a']['b'][0], x), 
        list)                                # => [10, 10]
 
+# threadx way:
 thread([data, data], 
        (map, x['a']['b'][0], x), 
        list)                                # => [10, 10]
 
 ```
 What just happened?
-- last `x` is the output from previous step, i.e. [data1, data2]
-- "x" in `x[...][...]` assumes the value of data1 and then data2.
-See `Inner working` to undestand whats happening
+- Last `x` is the output from previous step.
+- "x" in `x[...][...]` assumes the value of data1 and then data2 as map supplies them one by one.
 
-## Inner working
-### x
-`thread` sees `x` in arguments list and replaces it with return value from previous step. 
+### Build data transformation pipeline
 ```python
-x = _X()
+# make a tuple or list
+pipeline = (read_file, 
+            x.splitlines, 
+            (map, x.strip, x), 
+            (map, json.loads, x), 
+            (map, x['time'], x), 
+            sum)
+
+thread('./data.log', *pipeline)  # works jsut as any other function.
 ```
 
-### *x
-`*x` is a function
-```python
-(*x, ) == (_unpack_args, )
-```
-If `thread` function sees it in argument list, it replaces it with, result (unpacked) of previous step.
-
-### x[...]
-- `x[...]` retuns a object of class `_KeyChain`. 
-- This object remembers the key names that appear in brackets.
-
-```python
-data = [['a', 'b'], 'k']
-
-# This happens
-_KeyChain()[0][1](data) # => 'b'
-
-# You wite is as
-thread(data, 
-       x[0][1])
-
-# which is identical to
-thread(data, 
-       (x[0][1], x))
-
-# or you can write it as
-thread(data, 
-       _KeyChain()[0][1])
-
-```
-
-### x.thing
-`x.thing` works similar to `x[...]`, but instead of being an object, it is just a function with a closure on the name "thing".
-
-```python
-data = ['a', 'b']
-_capture_attr('index')(data, 'a')  # => 0
-
-thread(data, 
-       (x.index, 'a'))
-
-thread(data, 
-       (_capture_attr('index'), 'a'))
-
-thread(data, 
-       (_capture_attr('index'), x, 'a'))
-```
+## Why I Built This
+After spending a few years working with Clojure, I found myself missing its threading macros when I returned to Python (for a side project). Sure, Python has some tools for chaining operations, but nothing quite as elegant or powerful as what I was used to.
 
 ## TODO
-- Complete readme.
-- Few exmaple showing best written python code and then comparing it with threadx implementation, for:
- - redability
- - performance impact
 - Benchmarking code for performance both time and memory (if possible).
 - Publish it on pypi
