@@ -1,9 +1,28 @@
-**threadx** 
+**threadx** brings the elegance of Clojure's threading macros to Python, making your code cleaner, more readable, and functional. With threadx, you can seamlessly chain operations while avoiding deeply nested function calls. The library revolves around two powerful components:
+- thread: A function that threads values through a series of operations, passing the result from one step as the input to the next.
+- x: A placeholder object that represents where the output of the previous step should be placed. It supports method calls, item lookups, and unpacking, allowing for intuitive expressions.
 
+```python
+from threadx import thread, x
+
+thread('./data.log', 
+       read_file, 
+       x.splitlines, 
+       (map, x.strip, x), 
+       (map, json.loads, x), 
+       (map, x['time'], x), 
+       sum)
+
+# ./data.log file looks somthing like:
+# {"time": 12000, "fn": "foo", ...},\n {"time": 12000, "fn": "foo", ...}
+```
+**Advantages of threadx**:
+- Conciseness: The entire pipeline is expressed in a linear, easy-to-read format without the need for explicit intermediate variables.
+- Readability: It's clear how the data flows through each step because each transformation is applied directly to the output of the previous step.
+- Clarity: The use of x simplifies operations like method calls (x.splitlines), function mapping ((map, x.strip, x)), and accessing items (x['time']).
 
 # Table of Contents
 - [Install](#Install)
-- [Motivation](#Add-dependency)
 - [Usage](#Usage)
     - [Pass result as first argument](#Pass-result-as-first-argument)
     - [Pass x as nth argument](#Pass-x-as-nth-argument)
@@ -18,9 +37,6 @@
 - [TODO](#TODO)
 
 ## Install 
-TODO
-
-## Motivation
 TODO
 
 ## Usage
