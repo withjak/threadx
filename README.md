@@ -44,6 +44,7 @@ What Makes threadx Interesting?
     - [Debugging](#Debugging)
     - [Fewer lambdas](#Fewer-lambdas)
     - [Build data transformation pipeline](#Build-data-transformation-pipeline)
+- [Why I Built This](#Why-I-Built-This)
 - [TODO](#TODO)
 
 ## Install 
@@ -169,7 +170,7 @@ pipeline = (read_file,
             (map, x['time'], x), 
             sum)
 
-thread('./data.log', *pipeline)  # works jsut as any other function.
+thread('./data.log', *pipeline)  # works jsut like any other function.
 ```
 
 ## Why I Built This
