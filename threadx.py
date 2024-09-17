@@ -65,7 +65,7 @@ class _X:
         return _capture_attr(name)
     
     def __repr__(self):
-        return '_Special()'
+        return '_X()'
 
 x = _X()
 
