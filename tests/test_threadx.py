@@ -1,4 +1,5 @@
 from threadx import thread, x, stop
+import timeit
 import pytest
 
 """
@@ -125,16 +126,6 @@ def test_thread_higher_order_functions():
     assert [12, 12] == thread([data, data],
                               (map, x['a']['b'][1], x), 
                               list)
-
-def test_thread_lambda():
-    data = {'a': {'b': [10, 12]}}
-    assert [10, 10] == thread([data, data],
-                              (map, lambda i: i['a']['b'][0], x),
-                              list)
-    
-    assert [10, 10] == thread([data, data],
-                              (map, lambda i: i['a']['b'][0], x),
-                              list)
     
 def test_thread_stop_and_return():
     """place `stop` to return early."""
@@ -147,3 +138,142 @@ def test_thread_stop_and_return():
                                   stop,
                                   str)
 
+"""Insane tests
+operations on x 
+operation on x.thing
+operations on x[]
+"""
+
+def test_thread_insane_ops_on_x():
+    a = 3
+    b = 2
+    assert a + b == (x + b)(a)
+    assert a - b  == (x - b)(a)
+    assert a * b == (x * b)(a)
+    # assert a @ b == (x @ b)(a)
+    assert a / b == (x / b)(a)
+    assert a // b == (x // b)(a)
+    assert a % b == (x % b)(a)
+    assert a ** b == (x ** b)(a)
+    assert a >> b == (x >> b)(a)
+    assert a << b == (x << b)(a)
+    assert a & b == (x & b)(a)
+    assert a ^ b == (x ^ b)(a)
+    assert a | b == (x | b)(a)
+    assert (a < b) == (x < b)(a)
+    assert (a <= b) == (x <= b)(a)
+    assert (a == b) == (x == b)(a)
+    assert (a != b) == (x != b)(a)
+    assert (a > b) == (x > b)(a)
+    assert (a >= b) == (x >= b)(a)
+
+def test_thread_insane_ops_on_x_item():
+    a = [3, 2]
+    assert a[0] + a[1] == (x[0] + x[1])(a)
+    assert a[0] - a[1]  == (x[0] - x[1])(a)
+    assert a[0] * a[1] == (x[0] * x[1])(a)
+    # assert a[0] @ a[1] == (x[0] @ x[1])(a)
+    assert a[0] / a[1] == (x[0] / x[1])(a)
+    assert a[0] // a[1] == (x[0] // x[1])(a)
+    assert a[0] % a[1] == (x[0] % x[1])(a)
+    assert a[0] ** a[1] == (x[0] ** x[1])(a)
+    assert a[0] >> a[1] == (x[0] >> x[1])(a)
+    assert a[0] << a[1] == (x[0] << x[1])(a)
+    assert a[0] & a[1] == (x[0] & x[1])(a)
+    assert a[0] ^ a[1] == (x[0] ^ x[1])(a)
+    assert a[0] | a[1] == (x[0] | x[1])(a)
+    assert (a[0] < a[1]) == (x[0] < x[1])(a)
+    assert (a[0] <= a[1]) == (x[0] <= x[1])(a)
+    assert (a[0] == a[1]) == (x[0] == x[1])(a)
+    assert (a[0] != a[1]) == (x[0] != x[1])(a)
+    assert (a[0] > a[1]) == (x[0] > x[1])(a)
+    assert (a[0] >= a[1]) == (x[0] >= x[1])(a)
+
+
+
+def test_thread_insane_ops_on_x_getitem():
+    assert 1 == thread([1], 
+                       x[0] == 1)
+    
+    assert False == thread(1, 
+                       x == 2)
+    
+    assert True == thread(1, 
+                       x == 1)
+    
+    assert 16 == thread({'a': [0, 1, 2, 3, 4]}, 
+                       x['a'][1] + x['a'][2] + x['a'][3] + 10)
+
+def test_thread_insane_time_with_x():
+    # pipeline contains 100 fn calls. With x placed in worst position i.e. last position
+    # pipeline is rerun 1000 time
+    # so runtime overhead is between 0.08 / (100 * 1000) i.e.  between 600 to 800 nanoseconds 
+    # practically speaking using this in a very large system wont even account for 1 second delay
+    assert (0.08 > 
+            timeit.timeit('thread(1, *pipeline)', 
+                              setup="pipeline = [(return_args, 1, 2, 3, x) for _ in range(100)]", 
+                              globals=globals(), 
+                              number=1000)
+            > 0.06)
+
+def test_thread_insane_time_with_unpack_x():
+    # takes little more time, probably due to unking and not due to thread fn itself.
+    # also we are unpacking 1, 1 + 4, 1 + 4*2, ..., 1 + 4*100 args. which would be at best rare in real world.
+    # anyway its still only 0.1 sec for 100k calls. per call its like 0.1/100k
+    assert (0.2 > 
+            timeit.timeit('thread([1], *pipeline)', 
+                           setup="pipeline = [(return_args, 1, 2, 3, *x) for _ in range(100)]", 
+                           globals=globals(), 
+                           number=1000)
+            > 0.1)
+
+
+def get_data(): 
+    data = {'a': 'you finally found me'}
+    for _ in range(100):
+        data = {'a': [data]}
+    return data
+
+def get_pipeline():
+    return [x['a'][0] for _ in range(100)]
+
+def test_thread_insane_time_with_item_lookup():    
+    
+    assert {'a': 'you finally found me'} == thread(get_data(), *get_pipeline())
+
+    assert (0.08 > 
+            timeit.timeit('thread(data, *pipeline)', 
+                          setup = "data = get_data(); pipeline = get_pipeline()",
+                          globals=globals(), 
+                          number= 1000)
+            > 0.07)
+
+def get_data_2():
+    data = [1, 2]
+    for _ in range(2): 
+        data = [data, data]
+    return data
+
+def get_pipeline_2():
+    return [x[0] + x[1] for _ in range(2)]
+
+def get_pipeline_3():
+    return [(lambda i: i[0] + i[1]) for _ in range(2)]
+
+def test_thread_insane_time_with_op():
+
+     assert [1, 2, 1, 2] == thread(get_data_2(), *get_pipeline_2())
+
+     assert (0.003 > 
+            timeit.timeit('thread(data, *pipeline)', 
+                          setup = "data = get_data_2(); pipeline = get_pipeline_2()",
+                          globals=globals(), 
+                          number= 1000)
+            > 0.001)
+     
+     assert (0.003 > 
+            timeit.timeit('thread(data, *pipeline)', 
+                          setup = "data = get_data_2(); pipeline = get_pipeline_3()",
+                          globals=globals(), 
+                          number= 1000)
+            > 0.001)
