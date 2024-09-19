@@ -61,7 +61,7 @@ class _X:
     def __getitem__(self, name):
         return _KeyChain()[name]
         
-    def __getattribute__(self, name):
+    def __getattr__(self, name):
         return _capture_attr(name)
     
     def __repr__(self):
@@ -107,9 +107,9 @@ def thread(data, *pipeline):
         f, *rest = step
         if f == stop:
             return prev
-        elif f == x:
+        elif f is x:
             raise ValueError(f'x cannot be the first thing.')
-        elif f == _unpack_args:
+        elif f is _unpack_args:
             raise ValueError(f'*x cannot be the first thing.')
         elif callable(f):
             prev = _call_f(f, prev, rest)
