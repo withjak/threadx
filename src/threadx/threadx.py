@@ -131,29 +131,41 @@ x = _ShapeShifter()
 def _call_f(f, prev, args):
     """
     Builds up arguments list by subtituting:
-    - `_unpack_args` with *prev, or
+    - `unpack_args` with *prev, or
     - `x` with `prev`.
 
     Calls function `f` with these new arguments.
     """
+
     # list.index makes comparision using == 
-    # this wont work for us as soon as we check for equality x (i.e. _ShapeShifter()) will be converted to _LazyLookup().
+    # this wont work for us as soon as we check for equality x (i.e. _X()) will be converted to _KeyChain().
     # Also not choosing comparing hash as this might be expensive depending on the object.
     # so settling on id which is a contant time operation.
-    args_ids = [id(_) for _ in args]
-    try:
-        i = args_ids.index(id(_unpack_args))
-    except ValueError:
-        pass
-    else:
-        return f(*args[:i], *prev, *args[i+1:])
-          
-    try:
-        i = args_ids.index(id(x))
-    except ValueError:
-        return f(prev, *args)
-    else:
-        return f(*args[:i], prev, *args[i+1:])    
+    # also id comparision is much faster compared to == 
+    
+    x_id = id(x)
+    u_id = id(_unpack_args)
+    index = None 
+    unpack = None
+
+    # doing this loop manually as this previous implementation took 550ns while this implementation takes 300ns
+    for i, arg in enumerate(args): 
+        arg_id = id(arg)
+        if arg_id == x_id: 
+            index = i 
+            unpack = False
+            break
+        elif arg_id == u_id: 
+            index = i
+            unpack = True
+            break
+
+    if unpack == True: 
+        return f(*args[:index], *prev, *args[index+1:])
+    elif unpack == False: 
+        return f(*args[:index], prev, *args[index+1:])
+    else: # unpack == None
+        return f(prev, *args)   
 
 def thread(data, *steps):
     """Threads result of a step to next, i.e. passes output of one a function to the next function.

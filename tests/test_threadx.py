@@ -2,25 +2,6 @@ from threadx import thread, x, stop
 import timeit
 import pytest
 
-"""
-Test cases
-- implicity passed as first argument
-- explicity pass as nth argument
-- spread using *
-- first thing is required to be a callable
-    - a function
-    - a method
-    - a class
-    - a callable class object
-- x cannot be the first thing
-- method call 
-- attribute access 
-- key lookup and chained key lookup 
-- usage with higher order functions like map
-- usage in lambda function
-- stop and return early
-"""
-
 def return_args(*args):
     return args
 
@@ -37,7 +18,7 @@ def test_thread_explicit_first_argument():
     assert (1, ) == thread(1,
                           (return_args, x))
 
-def test_thread_pass_x_as_nth_argument():
+def test_thread_nth_argument():
     """place `x` as argument at different position"""
     assert ('here', 1, 2, 4) == thread('here',
                                        (return_args, x, 1, 2, 4))
@@ -138,13 +119,7 @@ def test_thread_stop_and_return():
                                   stop,
                                   str)
 
-"""Insane tests
-operations on x 
-operation on x.thing
-operations on x[]
-"""
-
-def test_thread_insane_ops_on_x():
+def test_x_binary_operations():
     a = 3
     b = 2
     assert a + b == (x + b)(a)
@@ -167,7 +142,7 @@ def test_thread_insane_ops_on_x():
     assert (a > b) == (x > b)(a)
     assert (a >= b) == (x >= b)(a)
 
-def test_thread_insane_ops_on_x_item():
+def test_x_binary_operations_and_item_lookup():
     a = [3, 2]
     assert a[0] + a[1] == (x[0] + x[1])(a)
     assert a[0] - a[1]  == (x[0] - x[1])(a)
@@ -190,8 +165,7 @@ def test_thread_insane_ops_on_x_item():
     assert (a[0] >= a[1]) == (x[0] >= x[1])(a)
 
 
-
-def test_thread_insane_ops_on_x_getitem():
+def test_thread_operations():
     assert 1 == thread([1], 
                        x[0] == 1)
     
@@ -204,76 +178,134 @@ def test_thread_insane_ops_on_x_getitem():
     assert 16 == thread({'a': [0, 1, 2, 3, 4]}, 
                        x['a'][1] + x['a'][2] + x['a'][3] + 10)
 
+    
+def return_one(*args):
+    return 1 
+
 def test_thread_insane_time_with_x():
+    calls_per_run = 100    
+    total_runs = 1000
+
+    # preparing best possible python code
+    code = 'f = lambda i: '
+    for _ in range(calls_per_run): 
+        code += 'return_one(1, 2, 3, '
+    code += 'i' + ')'*calls_per_run
+
+    normal = timeit.timeit('f(1)',
+                           setup=code,
+                           globals=globals(), 
+                           number=total_runs)
+    
     # pipeline contains 100 fn calls. With x placed in worst position i.e. last position
     # pipeline is rerun 1000 time
     # so runtime overhead is between 0.08 / (100 * 1000) i.e.  between 600 to 800 nanoseconds 
     # practically speaking using this in a very large system wont even account for 1 second delay
-    assert (0.08 > 
-            timeit.timeit('thread(1, *pipeline)', 
-                              setup="pipeline = [(return_args, 1, 2, 3, x) for _ in range(100)]", 
-                              globals=globals(), 
-                              number=1000)
-            > 0.06)
+    threadx = timeit.timeit('thread(1, *pipeline)', 
+                            setup=f"pipeline = [(return_one, 1, 2, 3, x) for _ in range({calls_per_run})]", 
+                            globals=globals(), 
+                            number=total_runs)
+    
+    # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
+    assert 6e-7 > (threadx - normal) / (calls_per_run * total_runs)
+
+
+def return_four(*args): 
+    return args[:4]
 
 def test_thread_insane_time_with_unpack_x():
-    # takes little more time, probably due to unking and not due to thread fn itself.
-    # also we are unpacking 1, 1 + 4, 1 + 4*2, ..., 1 + 4*100 args. which would be at best rare in real world.
-    # anyway its still only 0.1 sec for 100k calls. per call its like 0.1/100k
-    assert (0.2 > 
-            timeit.timeit('thread([1], *pipeline)', 
-                           setup="pipeline = [(return_args, 1, 2, 3, *x) for _ in range(100)]", 
+    calls_per_run = 100    
+    total_runs = 1000
+
+    # preparing best possible python code
+    code = 'f = lambda i: '
+    for _ in range(calls_per_run): 
+        code += 'return_four(1, 2, 3, *'
+    code += 'i' + ')'*calls_per_run
+
+    normal = timeit.timeit('f([1])',
+                           setup=code,
                            globals=globals(), 
-                           number=1000)
-            > 0.1)
+                           number=total_runs)
+    
+    threadx = timeit.timeit('thread([1], *pipeline)', 
+                           setup=f"pipeline = [(return_four, 1, 2, 3, *x) for _ in range({calls_per_run})]", 
+                           globals=globals(), 
+                           number=total_runs)
+    
+    # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
+    assert 6e-7 > (threadx - normal) / (calls_per_run * total_runs)
 
 
-def get_data(): 
+def get_data(calls_per_run): 
     data = {'a': 'you finally found me'}
     for _ in range(100):
         data = {'a': [data]}
     return data
 
-def get_pipeline():
+def get_pipeline(calls_per_run):
     return [x['a'][0] for _ in range(100)]
 
-def test_thread_insane_time_with_item_lookup():    
+def test_thread_insane_time_with_item_lookup(): 
+    calls_per_run = 100    
+    total_runs = 1000
+
+    code = 'lambda i: i'
+    for _ in range(calls_per_run): 
+        code += "['a'][0]"
     
-    assert {'a': 'you finally found me'} == thread(get_data(), *get_pipeline())
-
-    assert (0.08 > 
-            timeit.timeit('thread(data, *pipeline)', 
-                          setup = "data = get_data(); pipeline = get_pipeline()",
+    assert {'a': 'you finally found me'}  == eval(code)(get_data(calls_per_run))
+    normal = timeit.timeit('f(data)', 
+                          setup = f"f = {code}; data = get_data({calls_per_run})",
                           globals=globals(), 
-                          number= 1000)
-            > 0.07)
+                          number= total_runs)
+    
+    assert {'a': 'you finally found me'} == thread(get_data(calls_per_run), *get_pipeline(calls_per_run))
+    threadx = timeit.timeit('thread(data, *pipeline)', 
+                          setup = f"data = get_data({calls_per_run}); pipeline = get_pipeline({calls_per_run})",
+                          globals=globals(), 
+                          number= total_runs)
+    
+    assert 5e-7 > (threadx - normal) / (calls_per_run * total_runs)
 
-def get_data_2():
+
+def get_data_2(n):
     data = [1, 2]
-    for _ in range(2): 
+    for _ in range(n): 
         data = [data, data]
     return data
 
-def get_pipeline_2():
-    return [x[0] + x[1] for _ in range(2)]
+def get_pipeline_2(n):
+    return [x[0] + x[1] for _ in range(n)]
 
 def get_pipeline_3():
-    return [(lambda i: i[0] + i[1]) for _ in range(2)]
+    return [(lambda i: i[0] + i[1]) for _ in range(2)] 
+
+def extract(d):
+    return d[0] + d[1]
 
 def test_thread_insane_time_with_op():
+    calls_per_run = 100    
+    total_runs = 1000
 
-     assert [1, 2, 1, 2] == thread(get_data_2(), *get_pipeline_2())
+    code = "lambda i: "
+    for _ in range(calls_per_run):
+        code += 'extract('
+    code += 'i' + ')'*calls_per_run
 
-     assert (0.003 > 
-            timeit.timeit('thread(data, *pipeline)', 
-                          setup = "data = get_data_2(); pipeline = get_pipeline_2()",
+    assert [1, 2, 1, 2] == eval(code)(get_data_2(calls_per_run))
+    assert [1, 2, 1, 2] == thread(get_data_2(calls_per_run), 
+                                  *get_pipeline_2(calls_per_run))
+    
+    normal = timeit.timeit('f(data)', 
+                          setup = f"f = {code}; data = get_data_2({calls_per_run})",
                           globals=globals(), 
-                          number= 1000)
-            > 0.001)
+                          number= total_runs)
+    
+    threadx = timeit.timeit('thread(data, *pipeline)', 
+                          setup = f"data = get_data_2({calls_per_run}); pipeline = get_pipeline_2({calls_per_run})",
+                          globals=globals(), 
+                          number= total_runs)
+    
+    assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
      
-     assert (0.003 > 
-            timeit.timeit('thread(data, *pipeline)', 
-                          setup = "data = get_data_2(); pipeline = get_pipeline_3()",
-                          globals=globals(), 
-                          number= 1000)
-            > 0.001)

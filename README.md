@@ -140,22 +140,29 @@ thread(data,
 ```
 
 ### Fewer lambdas
-Remove verbose lambdas in the **simple case** where there is only one iterable provided to the `map`/`filter`/`reduce` or any other similar function.
+Remove verbose lambdas in **simple cases**.
 ```python 
+data = [[1, 2, 3, 4], [10, 20, 30, 40]]
+
 # Normal way:
-thread([data, data], 
-       (map, lambda i: i['a']['b'][0], x), 
-       list)                                # => [10, 10]
+thread(data, 
+       (map, lambda i: i[0], x), 
+       list)                                   # => [1, 10]
+# or
+thread(data, 
+       (map, x[0], x), 
+       list)                                   # => [1, 10]
 
-# threadx way:
-thread([data, data], 
-       (map, x['a']['b'][0], x), 
-       list)                                # => [10, 10]
 
+# Normal way:
+thread(range(12), 
+       (filter, lambda i: i % 2 == 0, x), 
+       list)                                   # => [0, 2, 4, 6, 8, 10]
+# or
+thread(range(12), 
+       (filter, x % 2 == 0, x), 
+       list)                                   # => [0, 2, 4, 6, 8, 10]
 ```
-What just happened?
-- Last `x` is the output from previous step.
-- "x" in `x[...][...]` assumes the value of data1 and then data2 as map supplies them one by one.
 
 ### Build data transformation pipeline
 ```python
