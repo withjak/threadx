@@ -42,7 +42,7 @@ What Makes threadx Interesting?
     - [Fewer lambdas](#Fewer-lambdas)
     - [Build data transformation pipeline](#Build-data-transformation-pipeline)
 - [Why I Built This](#Why-I-Built-This)
-- [TODO](#TODO)
+
 
 ## Install 
 ```bash

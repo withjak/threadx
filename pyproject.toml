@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "threadx"
-version = "0.1.0a1"
+version = "0.1.0a2"
 authors = [
   { name="Akshay Patel", email="akshaybishnoi@protonmail.com" },
 ]
