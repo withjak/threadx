@@ -45,7 +45,9 @@ What Makes threadx Interesting?
 - [TODO](#TODO)
 
 ## Install 
-TODO
+```bash
+pip install threadx 
+```
 
 ## Usage
 
@@ -180,6 +182,8 @@ thread('./data.log', *pipeline)  # works jsut like any other function.
 ## Why I Built This
 After spending a few years working with Clojure, I found myself missing its threading macros when I returned to Python (for a side project). Sure, Python has some tools for chaining operations, but nothing quite as elegant or powerful as what I was used to.
 
-## TODO
-- Benchmarking code for performance both time and memory (if possible).
-- Publish it on pypi
+
+
+
+
+
