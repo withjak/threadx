@@ -141,6 +141,30 @@ def test_x_binary_operations():
     assert (a != b) == (x != b)(a)
     assert (a > b) == (x > b)(a)
     assert (a >= b) == (x >= b)(a)
+    
+    assert a + b == (a + x)(b)
+    assert a - b  == (a - x)(b)
+    assert b - a  == (b - x)(a)
+    assert a * b == (a * x)(b)
+    # assert a @ b == (x @ b)(a)
+    assert a / b == (a / x)(b)
+    assert b / a == (b / x)(a)
+    assert a // b == (a // x)(b)
+    assert b // a == (b // x)(a)
+    assert a % b == (a % x)(b)
+    assert b % a == (b % x)(a)
+    assert a ** b == (a ** x)(b)
+    assert b ** a == (b ** x)(a)
+    assert a >> b == (a >> x)(b)
+    assert b >> a == (b >> x)(a)
+    assert a << b == (a << x)(b)
+    assert b << a == (b << x)(a)
+    assert a & b == (a & x)(b)
+    assert b & a == (b & x)(a)
+    assert a ^ b == (a ^ x)(b)
+    assert b ^ a == (b ^ x)(a)
+    assert a | b == (a | x)(b)
+    assert b | a == (b | x)(a)
 
 def test_x_binary_operations_and_item_lookup():
     a = [3, 2]
@@ -308,4 +332,3 @@ def test_thread_insane_time_with_op():
                           number= total_runs)
     
     assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
-     

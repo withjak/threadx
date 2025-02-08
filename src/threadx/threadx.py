@@ -49,7 +49,21 @@ operations_map = {'__add__': op.add,
                   '__eq__': op.eq, 
                   '__ne__': op.ne, 
                   '__gt__': op.gt,
-                  '__ge__': op.ge}
+                  '__ge__': op.ge, 
+                  # the other way around 
+                  '__radd__': lambda a, b: b + a,
+                  '__rsub__': lambda a, b: b - a, 
+                  '__rmul__': lambda a, b: b * a,
+                  '__rmatmul__': lambda a, b: b @ a,
+                  '__rtruediv__': lambda a, b: b / a,
+                  '__rfloordiv__': lambda a, b: b // a,
+                  '__rmod__': lambda a, b: b % a,
+                  '__rlshift__': lambda a, b: b << a,
+                  '__rrshift__': lambda a, b: a >> b,
+                  '__rpow__': lambda a, b: b ** a,
+                  '__rand__': lambda a, b: b & a,
+                  '__rxor__': lambda a, b: b ^ a,
+                  '__ror__': lambda a, b: b | a}
 
 class _LazyLookup:
     """Remembers the item names and operations. 
