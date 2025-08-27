@@ -26,6 +26,7 @@ keywords = [
     "compose functions", 
     "clojure"
 ]
+
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
