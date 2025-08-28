@@ -21,16 +21,6 @@ def stop():
     """Used as a symbol for comparision"""
     pass
 
-def _capture_attr(name):
-    def call_me(obj, *args):
-        thing = getattr(obj, name)
-        if callable(thing):
-            return thing(*args)     
-        else:
-            # if args not empty then raise exception / log warning saying syntax error. thing is not callable.
-            return thing
-    return call_me
-
 operations_map = {'__add__': op.add,
                   '__sub__': op.sub,
                   '__mul__': op.mul,
@@ -65,6 +55,9 @@ operations_map = {'__add__': op.add,
                   '__rxor__': lambda a, b: b ^ a,
                   '__ror__': lambda a, b: b | a}
 
+def _obj_yet_to_come():
+    pass
+
 class _LazyLookup:
     """Remembers the item names and operations. 
     When called with data, lookup those items in the data and perform any needed operations.
@@ -76,6 +69,7 @@ class _LazyLookup:
     """
     
     def __init__(self):
+        self.call = False
         self.key_names = []
         
         self.operations = []
@@ -90,19 +84,46 @@ class _LazyLookup:
     
     def __getitem__(self, name):
         "Warning: object is modified once we try to get an item"
-        self.key_names.append(name)
+        self.key_names.append(('getitem', name))
         return self
-    
-    def __call__(self, data_obj):
+
+    def __getattr__(self, name):
+        "Warning: object is modified once we try to get an attr"
+        self.key_names.append(('getattr', name))
+        return self
+
+    def _get_obj(self, data_obj):
         obj = data_obj
-        for name in self.key_names:
-            obj = obj[name]
+        for typ, name in self.key_names:
+            if typ == 'getitem':
+                obj = obj[name]
+            elif typ == 'getattr': 
+                obj = getattr(obj, name)
+        return obj
+    
+    def __call__(self, data_obj=_obj_yet_to_come):
+        if data_obj is _obj_yet_to_come: 
+            self.call = True
+            return self 
+            
+        obj = self._get_obj(data_obj)
+
+        if self.call:
+            obj = obj() 
 
         for operation, other in self.operations:
             if isinstance(other, self.__class__): 
                 other = other(data_obj)     
             obj = operation(obj, other)
         return obj
+
+    def method_call(self, data_obj, *args):
+        if self.call: 
+            raise SyntaxError(f'Incrrect (x.foo(), arg). Correct (x.foo, arg )')
+
+        obj = self._get_obj(data_obj)
+        return obj(*args)
+        
     
     def __repr__(self):
         return '_LazyLookup()' + str.join('', [f"[{_!r}]" for _ in self.key_names]) + ' ' + str(self.operations) 
@@ -135,14 +156,14 @@ class _ShapeShifter:
         return _LazyLookup()[name]
         
     def __getattr__(self, name):
-        return _capture_attr(name)
+        return getattr(_LazyLookup(), name) # _capture_attr(name)
     
     def __repr__(self):
         return '_ShapeShifter()'
 
 x = _ShapeShifter()
 
-def _call_f(f, prev, args):
+def _call_f(f, prev, args, default_first=True):
     """
     Builds up arguments list by subtituting:
     - `unpack_args` with *prev, or
@@ -150,7 +171,9 @@ def _call_f(f, prev, args):
 
     Calls function `f` with these new arguments.
     """
-
+    if isinstance(f, _LazyLookup) and (len(args) > 0):
+        return f.method_call(prev, *args)
+        
     # list.index makes comparision using == 
     # this wont work for us as soon as we check for equality x (i.e. _X()) will be converted to _KeyChain().
     # Also not choosing comparing hash as this might be expensive depending on the object.
@@ -178,15 +201,17 @@ def _call_f(f, prev, args):
         return f(*args[:index], *prev, *args[index+1:])
     elif unpack == False: 
         return f(*args[:index], prev, *args[index+1:])
-    else: # unpack == None
-        return f(prev, *args)   
+    elif default_first == True: # unpack == None
+        return f(prev, *args) 
+    else: 
+        return f(*args, prev)
 
-def thread(data, *steps):
+def xf(data, *steps, default_first=True):
     """Threads result of a step to next, i.e. passes output of one a function to the next function.
     Ex.
-    thread(10, 
-           (range, 0, x, 2), 
-           sum)
+    xf(10, 
+       (range, 0, x, 2), 
+       sum)
     Check tests/readme for all possible options.
     """
     prev = data
@@ -202,8 +227,10 @@ def thread(data, *steps):
         elif f is _unpack_args:
             raise ValueError(f'*x cannot be the first thing.')
         elif callable(f):
-            prev = _call_f(f, prev, rest)
+            prev = _call_f(f, prev, rest, default_first)
         else:
             raise TypeError(f'First thing in tuple needs to be a callable. Got {type(f)}:{f}')
     return prev
 
+def xl(data, *steps):
+    return xf(data, *steps, default_first=False)

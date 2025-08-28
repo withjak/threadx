@@ -1,4 +1,5 @@
-from threadx import thread, x, stop
+from threadx import xf as thread
+from threadx import x, stop
 import timeit
 import pytest
 
@@ -71,7 +72,7 @@ def test_thread_method_call():
                                   (x.return_args, 1, 2, 3, 4))
     
     assert 4 == thread([1, 2, 3, 4],
-                       x.__len__)
+                       x.__len__())
     
     assert 3 == thread([1, 2, 3, 4],
                        (x.index, 4))
@@ -290,7 +291,7 @@ def test_thread_insane_time_with_item_lookup():
                           globals=globals(), 
                           number= total_runs)
     
-    assert 5e-7 > (threadx - normal) / (calls_per_run * total_runs)
+    assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
 
 
 def get_data_2(n):

@@ -1,3 +1,3 @@
-from .threadx import thread, x, stop
+from .threadx import xf, x, stop
 
-__all__ = ['thread', 'x', 'stop']
+__all__ = ['xf', 'x', 'stop']
