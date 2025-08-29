@@ -5,15 +5,24 @@ It lets you thread values through a sequence of operations with a sense of clari
 
 Here’s what it looks like in action:
 ```python
-from threadx import thread, x
+from threadx import xf, x
 
-thread('./data.log', 
-       read_file, 
-       x.splitlines, 
-       (map, x.strip, x), 
-       (map, json.loads, x), 
-       (map, x['time'], x), 
-       sum)
+xf('./data.log', 
+   read_file, 
+   x.splitlines(), 
+   (map, x.strip(), x), 
+   (map, json.loads, x), 
+   (map, x['time'], x), 
+   sum)
+
+# or
+xl('./data.log', 
+   read_file, 
+   x.splitlines(), 
+   (map, x.strip()), 
+   (map, json.loads), 
+   (map, x['time']), 
+   sum)
 ```
 
 What’s happening here? The file content is being read, split, stripped, converted to JSON, and the execution-time summed—all in a linear and readable way. No intermediary variables, no nesting, just the data flowing from one step to the next. <br>
@@ -53,93 +62,95 @@ pip install threadx
 
 ### Import
 ```python
-from threadx import thread, x, stop
+from threadx import xf, xl, x
 ```
 
 ### Pass result as first argument
-`thread` allows you to pass the result of the previous step automatically as the first argument in each new function:
+`xf` allows you to pass the result of the previous step automatically as the first argument in each new function:
 ```python
-thread([1, 2, 3],  # => [1, 2, 3]
-       sum,        # => 6
-       str)        # => '6'
+xf([1, 2, 3],  # => [1, 2, 3]
+   sum,        # => 6
+   str)        # => '6'
 ```
 
 Or, be explicit about it:
 ```python
-thread([1, 2, 3],
-       (sum, x),
-       (str, x))
+xf([1, 2, 3],
+   (sum, x),
+   (str, x))
 ```
 
 ### Pass x as nth argument
 Want to pass the result into a different argument position? No problem:
 ```python
-thread(10, 
-       (range, x, 20, 3),  # same as (range, 20, 3)
-       list)               # => [10, 13, 16, 19]
+xf(10, 
+   (range, x, 20, 3),  # same as (range, 20, 3)
+   list)               # => [10, 13, 16, 19]
 
-thread(20, 
-       (range, 10, x, 3),
-       list)               # => [10, 13, 16, 19]
+xf(20, 
+   (range, 10, x, 3),
+   list)               # => [10, 13, 16, 19]
 
-thread(3, 
-       (range, 10, 20, x),
-       list)               # => [10, 13, 16, 19]
+xf(3, 
+   (range, 10, 20, x),
+   list)               # => [10, 13, 16, 19]
 ```
+
+### Pass x as last argument
+`xl` works same as `xf`, with just one change, that `x` will be passed as the last argument.
+- x**l** - pass x as **l**ast
+- x**f** - pass x as **f**irst
 
 ### Unpacking arguments 
 
 Unpacking works as usual
 
 ```python 
-thread([10, 20], 
-       (range, *x, 3),     # unpack to (range, 10, 20, 3)
-       list)               # => [10, 13, 16, 19]
-```
-
-### Method call
-Use `x.method_name` for method calls, just like magic.
-```python
-thread(['a', 'b'], 
-       (x.index, 'a'))      # => 0
-
-thread(['a', 'b'], 
-       (x.count, 'b'))      # => 1
-```
-
-### Attribute lookup
-Use `x.attribute_name` to lookup class and instance attributes. 
-```python 
-thread({'a': 1, 'b': 2},
-       x.keys, 
-       list)                # => ['a', 'b']
-
+xf([10, 20], 
+   (range, *x, 3),     # unpack to (range, 10, 20, 3)
+   list)               # => [10, 13, 16, 19]
 ```
 
 ### Getting Item And Slicing
 ```python
 data = {'a': {'b': [1, 2, 3, 4]}}
 
-thread(data, 
-       x['a'], 
-       x['b'][0])                   # => 1
+xf(data, 
+   x['a'], 
+   x['b'][0])                   # => 1
 
-thread(data, 
-       x['a']['b'][:2])             # => [1, 2]
+xf(data, 
+   x['a']['b'][:2])             # => [1, 2]
 
 ```
 
-### Debugging 
-Easily inspect intermediate results using `stop`. Usefull for debugging.
+### Attribute lookup
+Use `x.attribute_name` to lookup class and instance attributes. 
+```python 
+xf(3 + 4j,
+   x.real)                # => 3
+
+xf(3 + 4j,
+   (x.real))              # => 3
+```
+
+### Method call
+Use `x.method_name()` or `x.method_name(args)` for method calls, just like magic.
 ```python
-thread(data, 
-       x['a'], 
-       x['b'], 
-       stop,                    # => [1, 2, 3, 4], Stop and return for inspection
-       sum,                     # This won’t be executed
-       str)
+data = {'a': 1, 'b': 2}
 
+xf(data, 
+   x.keys(),                 # same as (x.keys())
+   list)                     # => ['a', 'b']
+
+xf(data, 
+   (x.keys()),
+   (list))                    # => ['a', 'b']
+
+xf(data, 
+   x.get('c', 'Not Found'))   # => 'Not Found'
 ```
+
 
 ### Fewer lambdas
 Remove verbose lambdas in **simple cases**.
@@ -147,36 +158,67 @@ Remove verbose lambdas in **simple cases**.
 data = [[1, 2, 3, 4], [10, 20, 30, 40]]
 
 # Normal way:
-thread(data, 
-       (map, lambda i: i[0], x), 
-       list)                                   # => [1, 10]
+xf(data, 
+   (map, lambda i: i[0], x), 
+   list)                                   # => [1, 10]
 # or
-thread(data, 
-       (map, x[0], x), 
-       list)                                   # => [1, 10]
+xf(data, 
+   (map, x[0], x), 
+   list)                                   # => [1, 10]
+# or
+xl(data, 
+   (map, x[0]), 
+   list)                                   # => [1, 10]
 
 
 # Normal way:
-thread(range(12), 
-       (filter, lambda i: i % 2 == 0, x), 
-       list)                                   # => [0, 2, 4, 6, 8, 10]
+xf(range(12), 
+   (filter, lambda i: i % 2 == 0, x), 
+   list)                                   # => [0, 2, 4, 6, 8, 10]
 # or
-thread(range(12), 
-       (filter, x % 2 == 0, x), 
-       list)                                   # => [0, 2, 4, 6, 8, 10]
+xf(range(12), 
+   (filter, x % 2 == 0, x), 
+   list)                                   # => [0, 2, 4, 6, 8, 10]
+# or
+xl(range(12), 
+   (filter, x % 2 == 0), 
+   list)                                   # => [0, 2, 4, 6, 8, 10]
 ```
 
 ### Build data transformation pipeline
 ```python
 # make a tuple or list
 pipeline = (read_file, 
-            x.splitlines, 
-            (map, x.strip, x), 
-            (map, json.loads, x), 
-            (map, x['time'], x), 
+            x.splitlines(), 
+            (map, x.strip()), 
+            (map, json.loads), 
+            (map, x['time']), 
             sum)
 
-thread('./data.log', *pipeline)  # works jsut like any other function.
+xl('./data.log', *pipeline)  # works jsut like any other function.
+```
+
+### Blowing your brain
+```python
+# Not saying to solve this problem this way,
+# Just showing what `x` can do
+answer_sheet =  [{'a': 1, 'b': 2, 'op': op.add    , 'marks': 1, 'answer': 3},
+                 {'a': 1, 'b': 2, 'op': op.mul    , 'marks': 2, 'answer': 2},
+                 {'a': 1, 'b': 2, 'op': op.truediv, 'marks': 2, 'answer': 0.6} # <- Incorrect answer by student
+             ]
+
+# need 60% to pass
+passing_marks = 3
+
+# note it is not a lambda
+correct_answer = x['op'](x['a'], x['b']) == x['answer']
+
+xl(answer_sheet, 
+   (filter, correct_answer), # <--
+   (map, x['marks']),
+   (sum), 
+   (x >= passing_marks)      # <--
+  )                          # => True
 ```
 
 ## Why I Built This

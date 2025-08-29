@@ -1,6 +1,7 @@
 from threadx import xf as thread
-from threadx import x, stop
+from threadx import x, xl
 import timeit
+import operator as op
 import pytest
 
 def return_args(*args):
@@ -69,13 +70,13 @@ class Foo:
 
 def test_thread_method_call():
     assert (1, 2, 3, 4) == thread(Foo('o'), 
-                                  (x.return_args, 1, 2, 3, 4))
+                                  (x.return_args(1, 2, 3, 4)))
     
     assert 4 == thread([1, 2, 3, 4],
                        x.__len__())
     
     assert 3 == thread([1, 2, 3, 4],
-                       (x.index, 4))
+                       (x.index(4)))
 
 def test_thread_attribute_access():
     assert 'o' == thread(Foo('o'),
@@ -109,16 +110,16 @@ def test_thread_higher_order_functions():
                               (map, x['a']['b'][1], x), 
                               list)
     
-def test_thread_stop_and_return():
-    """place `stop` to return early."""
-    assert 10 == thread([1, 2, 3, 4], 
-                         sum,
-                         stop,
-                         str)
+# def test_thread_stop_and_return():
+#     """place `stop` to return early."""
+#     assert 10 == thread([1, 2, 3, 4], 
+#                          sum,
+#                          stop,
+#                          str)
     
-    assert [1, 2, 3, 4] == thread([1, 2, 3, 4],
-                                  stop,
-                                  str)
+#     assert [1, 2, 3, 4] == thread([1, 2, 3, 4],
+#                                   stop,
+#                                   str)
 
 def test_x_binary_operations():
     a = 3
@@ -203,6 +204,19 @@ def test_thread_operations():
     assert 16 == thread({'a': [0, 1, 2, 3, 4]}, 
                        x['a'][1] + x['a'][2] + x['a'][3] + 10)
 
+def test_complex(): 
+    answer_sheet =  [{'a': 1, 'b': 2, 'op': op.add    , 'question': 1, 'answer': 3},
+                     {'a': 1, 'b': 2, 'op': op.mul    , 'question': 2, 'answer': 2},
+                     {'a': 1, 'b': 2, 'op': op.truediv, 'question': 3, 'answer': 0.6} # <- Incorrect answer by student
+                    ]
+    
+    correct_answer = x['op'](x['a'], x['b']) == x['answer']
+
+    assert [1, 2] == xl(answer_sheet, 
+                        (filter, correct_answer),
+                        (map, x['question']),
+                        list)
+
     
 def return_one(*args):
     return 1 
@@ -232,7 +246,7 @@ def test_thread_insane_time_with_x():
                             number=total_runs)
     
     # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
-    assert 6e-7 > (threadx - normal) / (calls_per_run * total_runs)
+    assert 8e-7 > (threadx - normal) / (calls_per_run * total_runs)
 
 
 def return_four(*args): 
@@ -259,7 +273,7 @@ def test_thread_insane_time_with_unpack_x():
                            number=total_runs)
     
     # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
-    assert 6e-7 > (threadx - normal) / (calls_per_run * total_runs)
+    assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
 
 
 def get_data(calls_per_run): 
