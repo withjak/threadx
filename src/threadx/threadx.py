@@ -150,7 +150,12 @@ class _LazyLookup:
         operations = [self._operations_str(op, other) for op, other in self.operations]
         
         return '_LazyLookup()' + str.join('', lookup) + str.join('', operations) 
- 
+
+# TODO: currently x.__dict__ => {} 
+# so we cant do
+# class c: pass
+# xl(c, x.__dict__)
+# task: add support for special methods (or somespecial method which does it automatically) if there is a legit usecase. 
 class _ShapeShifter:
     """I am `_ShapeShifter` (`x`).
     When you try to:
@@ -194,14 +199,36 @@ def _call_f(f, prev, args, default_first=True):
 
     Calls function `f` with these new arguments.
     """
+
+    # this handles 
+    # xf([1, 2, 3, 4], 
+    #    (x.index(4)))
     if isinstance(f, _LazyLookup):
         f._call = True
         return f(prev)
 
     else:
+        # this handles
+        # xl([[1, 2], [3, 4]], 
+        #    (map, x.__len__()), 
+        #    list)
         for arg in args: 
             if isinstance(arg, _LazyLookup):
                 arg._call = True
+
+        for i_, arg in enumerate(args):
+            # Now we cant have tuple of callables as they will be treated specially. 
+            # So this is a limitation of threadx for now.
+            # I am okay with it because you could always use a list instead of tuple.
+            if isinstance(arg, tuple) and len(arg) > 0 and callable(arg[0]): 
+                def lock(arg_original):
+                    def use(v):
+                        if default_first == True:
+                            return xf(v, arg_original)
+                        else:
+                            return xl(v, arg_original)
+                    return use
+                args[i_] = lock(arg)
             
         # list.index makes comparision using == 
         # this wont work for us as soon as we check for equality x (i.e. _X()) will be converted to _KeyChain().
@@ -236,7 +263,7 @@ def _call_f(f, prev, args, default_first=True):
             return f(*args, prev)
 
 def xf(data, *steps, default_first=True):
-    """Threads result of a step to next, i.e. passes output of one a function to the next function.
+    """Threads result of a step to next, i.e. passes output of one function to the next function.
     Ex.
     xf(10, 
        (range, 0, x, 2), 

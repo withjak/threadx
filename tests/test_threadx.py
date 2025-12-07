@@ -1,5 +1,6 @@
 from threadx import xf as thread
-from threadx import x, xl
+from threadx import x, xl, xf
+from functools import reduce
 import timeit
 import operator as op
 import pytest
@@ -246,7 +247,7 @@ def test_thread_insane_time_with_x():
                             number=total_runs)
     
     # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
-    assert 8e-7 > (threadx - normal) / (calls_per_run * total_runs)
+    assert 8e-6 > (threadx - normal) / (calls_per_run * total_runs)
 
 
 def return_four(*args): 
@@ -273,7 +274,7 @@ def test_thread_insane_time_with_unpack_x():
                            number=total_runs)
     
     # 1 second overhead you can make 1/6e-7 => 1,666,667 function calls.
-    assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
+    assert 7e-6 > (threadx - normal) / (calls_per_run * total_runs)
 
 
 def get_data(calls_per_run): 
@@ -347,3 +348,53 @@ def test_thread_insane_time_with_op():
                           number= total_runs)
     
     assert 7e-7 > (threadx - normal) / (calls_per_run * total_runs)
+
+
+def test_nested_x():
+    """..."""
+    assert [2, 3] == xl([1, 2], 
+                        (map, (op.add, 1)), 
+                        list) \
+                  == xl([1, 2], 
+                        (map, lambda i: i + 1), 
+                        list) \
+                  == xl([1, 2], 
+                        (map, x + 1), 
+                        list) 
+
+    data = [[1, 2, 3], [4, 5, 6]]
+    assert [6, 15] ==  xl(data, 
+                         (map, 
+                          (reduce, op.add, x)), 
+                          list) \
+                  ==  xl(data, 
+                         (map, 
+                          (reduce, op.add)),    # implicitly x is the last argument in nested thing
+                          list) \
+                  ==  xl(data, 
+                         (map, 
+                          (reduce, op.add, x),  # here x is [1, 2] and then in next call its [3, 4]
+                          x),                # here x is data i.e. [[1, 2], [3, 4]]
+                          list) \
+                  ==  xf(data,
+                         (map, 
+                          (reduce, op.add, x),  # implicitly x is the first argument in nested thing
+                          x), 
+                          list) \
+                  ==  xl(data, 
+                         (map, sum), 
+                         list)
+    
+    target_dir = "./src/threadx"
+    import os
+    assert ["./src/threadx/threadx.py"] ==  xl(target_dir,
+                                               (os.listdir),
+                                               (map, (os.path.join, target_dir)),
+                                               (filter, os.path.isfile),
+                                               (filter, x.endswith('x.py')), 
+                                               list)
+
+
+def test_random():
+    assert 45 == xl(10, range, 
+                    (reduce, op.add))

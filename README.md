@@ -5,7 +5,7 @@ It lets you thread values through a sequence of operations with a sense of clari
 
 Here’s what it looks like in action:
 ```python
-from threadx import xf, x
+from threadx import xf, xl, x
 
 xf('./data.log', 
    read_file, 
@@ -47,8 +47,8 @@ What Makes threadx Interesting?
     - [Method call](#Method-call)
     - [Attribute lookup](#Attribute-lookup)
     - [Getting Item And Slicing](#Getting-Item-And-Slicing)
-    - [Debugging](#Debugging)
     - [Fewer lambdas](#Fewer-lambdas)
+    - [Nested x](#Nested-x)
     - [Build data transformation pipeline](#Build-data-transformation-pipeline)
 - [Why I Built This](#Why-I-Built-This)
 
@@ -140,12 +140,12 @@ Use `x.method_name()` or `x.method_name(args)` for method calls, just like magic
 data = {'a': 1, 'b': 2}
 
 xf(data, 
-   x.keys(),                 # same as (x.keys())
+   x.keys(),                 # equivalent to data.keys()
    list)                     # => ['a', 'b']
 
 xf(data, 
    (x.keys()),
-   (list))                    # => ['a', 'b']
+   (list))                   # => ['a', 'b']
 
 xf(data, 
    x.get('c', 'Not Found'))   # => 'Not Found'
@@ -183,6 +183,46 @@ xf(range(12),
 xl(range(12), 
    (filter, x % 2 == 0), 
    list)                                   # => [0, 2, 4, 6, 8, 10]
+```
+
+### Nested x
+```python
+import operator as op
+from functools import reduce
+
+data = [[1, 2, 3], [4, 5, 6]]
+
+# sum each list 
+[sum(l) for l in data]
+
+# equivalent
+xl(data, 
+   (map, sum), 
+   list)
+
+# lets say we do not have sum function, then
+[reduce(op.add, lst) for lst in data]
+
+# equivalent
+xl(data, 
+   (map, (reduce, op.add)),               
+   list)                                  # => [6, 15]
+
+xl(data, 
+   (map, (reduce, op.add, x)),            # implicitly x is the last argument in the nested tuple, because its a xl.
+   list)
+
+xl(data, 
+   (map, 
+     (reduce, op.add, x),                 # Or you can be explicit about where it goes, here x is [1, 2, 3] and then in next call its [4, 5, 6]
+     x),                                  # here x is data i.e. [[1, 2], [3, 4]]
+   list)
+
+xf(data,
+   (map, 
+     (reduce, op.add, x),                  # implicitly x is the first argument in the nested tuple, because its a xf.
+     x), 
+   list)
 ```
 
 ### Build data transformation pipeline
